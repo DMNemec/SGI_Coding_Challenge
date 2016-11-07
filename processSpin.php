@@ -17,8 +17,7 @@ function validateData($playerId,$coinsBet,$coinsWon,$hash,$link){
       $row = mysqli_fetch_assoc($saltResults);
       $salt = $row["Salt"];
    } else {
-      echo "Unable to retrieve salt from database\n";
-      exit;
+      die("Unable to retrieve salt from database\n");
    } 
 
    $vHash = hash("md5",$salt.$coinsWon.$coinsBet.$playerId);   
@@ -41,7 +40,8 @@ function updatePlayer($playerId,$coinsBet,$coinsWon,$link){
    // Function Code
    $updateQuery = "UPDATE `Player` 
                    SET `LifetimeSpins` = LifetimeSpins + 1,
-                       `Credits` = Credits - '{$coinsBet}' + '{$coinsWon}'
+                       `Credits` = Credits - '{$coinsBet}' + '{$coinsWon}',
+                       `LifetimeWinnings` = LifetimeWinnings + '{$coinsWon}'
                    WHERE `PlayerID` = '{$playerId}'";
    if(mysqli_query($link,$updateQuery)){
       echo "Record successfully updated.\n";
@@ -64,7 +64,7 @@ function outputJSON($playerId,$link){
    // Function Code
    $jsonQuery = "SELECT `PlayerId`,`Name`,`Credits`,
                 `LifetimeSpins`,
-                (Credits/LifetimeSpins) as `LifetimeAverageReturn`
+                (LifetimeWinnings/LifetimeSpins) as `LifetimeAverageReturn`
                 FROM `Player` 
                 WHERE `PlayerId` = {$playerId}";
    $jsonResult = mysqli_query($link,$jsonQuery) or
@@ -73,14 +73,34 @@ function outputJSON($playerId,$link){
    echo "\nJSON Output\n".json_encode($jsonArray)."\n\n";
 }
 
+function coinsFill($bet){
+   // Generates a random amount of winnings per spin
+   // Has a chance to win, then a win amount
+   
+   // Local Variables
+   $chance = 70;
+
+   // Function Code
+   if(rand(0,100)>$chance){
+      return rand(1,10)*$bet;
+   } else {
+      return 0;
+   }
+}
+
 // Main Program
 
-// Input data variables (for testing)
-// Hash is salt+coinsWon+coinsBet+playerId using md5
-$hash = "c87065daa6716c6e422d04bebe2d7989";
-$coinsWon = "5000";
-$coinsBet = "900";
+// The assumption is made that the record exists within the
+// table already, as it would have been created by the client 
+// when the game was first opened the account.
+
+if(sizeof($argv)!= 2) die("Usage: php processSpin.php <bet amount>\n");
+
+// Input data variables
+$coinsBet = $argv[1];
+$coinsWon = coinsFill($coinsBet);
 $playerId = "8711";
+$hash = hash("md5","1".$coinsWon.$coinsBet.$playerId);   
 
 // Connection Variables
 $database = "Player";
