@@ -65,7 +65,11 @@ function outputJSON($playerId,$link){
    $jsonArray = array();
 
    // Function Code
-   $jsonQuery = 'SELECT * FROM `Player` WHERE `PlayerId` = "'.$playerId.'"';
+   $jsonQuery = 'SELECT `PlayerId`,`Name`,`Credits`,
+                `LifetimeSpins`,
+                (Credits/LifetimeSpins) as `LifetimeAverageReturn`
+                FROM `Player` 
+                WHERE `PlayerId` = "'.$playerId.'"';
    $jsonResult = mysqli_query($link,$jsonQuery) or 
                  die("Error in selecting json: ".mysqli_error($link));
    while($row = mysqli_fetch_assoc($jsonResult)){
