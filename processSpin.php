@@ -9,13 +9,12 @@ function validateData($playerId,$coinsBet,$coinsWon,$hash,$link){
    $saltQuery;
    $saltResults;
    $row;
-   $result;
 
    // Function Code
-   $saltQuery = 'SELECT Salt FROM Player WHERE PlayerID = "'.$playerId.'"';
-   $saltResults = $link->query($saltQuery);
-   if($saltResults->num_rows > 0){
-      $row = $saltResults->fetch_assoc();
+   $saltQuery = "SELECT Salt FROM Player WHERE PlayerID = {$playerId}";
+   $saltResults = mysqli_query($link,$saltQuery);
+   if(mysqli_num_rows($saltResults) > 0){
+      $row = mysqli_fetch_assoc($saltResults);
       $salt = $row["Salt"];
    } else {
       echo "Unable to retrieve salt from database\n";
@@ -26,12 +25,11 @@ function validateData($playerId,$coinsBet,$coinsWon,$hash,$link){
 
    if(!strcmp($hash,$vHash)){
       echo "Data successfully validated.\n";
-      $result = True;
+      return True;
    } else {
       echo "Unable to validate data.\n";
-      $result = False;
+      return False;
    }
-   return $result;
 }
 
 function updatePlayer($playerId,$coinsBet,$coinsWon,$link){
@@ -39,21 +37,19 @@ function updatePlayer($playerId,$coinsBet,$coinsWon,$link){
 
    // Local Variables
    $updateQuery;
-   $result;
    
    // Function Code
-   $updateQuery = 'UPDATE `Player` 
+   $updateQuery = "UPDATE `Player` 
                    SET `LifetimeSpins` = LifetimeSpins + 1,
-                       `Credits` = Credits - '.$coinsBet.' + '.$coinsWon.'
-                   WHERE `PlayerID` = "'.$playerId.'"';
+                       `Credits` = Credits - '{$coinsBet}' + '{$coinsWon}'
+                   WHERE `PlayerID` = '{$playerId}'";
    if(mysqli_query($link,$updateQuery)){
       echo "Record successfully updated.\n";
-      $result = True;
+      return True;
    } else {
       echo "Error updating record: ".mysqli_error($link).".\n";
-      $result = False;
+      return False;
    }
-   return $result;
 }
 
 function outputJSON($playerId,$link){
@@ -63,18 +59,17 @@ function outputJSON($playerId,$link){
    $jsonQuery;
    $jsonResult;
    $jsonArray = array();
+   $message = "Error selecting json: ";
 
    // Function Code
-   $jsonQuery = 'SELECT `PlayerId`,`Name`,`Credits`,
+   $jsonQuery = "SELECT `PlayerId`,`Name`,`Credits`,
                 `LifetimeSpins`,
                 (Credits/LifetimeSpins) as `LifetimeAverageReturn`
                 FROM `Player` 
-                WHERE `PlayerId` = "'.$playerId.'"';
-   $jsonResult = mysqli_query($link,$jsonQuery) or 
-                 die("Error in selecting json: ".mysqli_error($link));
-   while($row = mysqli_fetch_assoc($jsonResult)){
-      $jsonArray[] = $row;
-   }
+                WHERE `PlayerId` = {$playerId}";
+   $jsonResult = mysqli_query($link,$jsonQuery) or
+                 die(json_encode($message.mysqli_error($link))."\n");
+   $jsonArray[] = mysqli_fetch_assoc($jsonResult);
    echo "\nJSON Output\n".json_encode($jsonArray)."\n\n";
 }
 
@@ -105,7 +100,7 @@ if(!$link){
    printf("Successfully connected to database $database.\n");
 }
 
-// Dispaly data
+// Display data
 echo "Player ID: $playerId\nCoins Bet: $coinsBet\nCoins Won: $coinsWon\n";
 echo "Hash using md5: $hash\n";
 
